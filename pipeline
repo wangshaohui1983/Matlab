@@ -1,31 +1,35 @@
+// Declarative Pipeline
 pipeline {
-  agent any
-  stages {
-    stage('Build') {
-      steps {
-        runMATLABCommand 'run(\'arduino_build\')'
-      }
-    }
+    agent any
+    stages {
+        stage('BuildAndTest') {
+            matrix {
+                agent any
+                environment {
+                    PATH = "C:\\Program Files\\MATLAB\\${MATLAB_VERSION}\\bin;${PATH}"   // Windows agent
+                }
+                axes {
+                    axis {
+                        name 'MATLAB_VERSION'
+                        values 'R2018b', 'R2020a'
+                    }
+                }
+                stages {
+                    stage('Run MATLAB commands') {
+                        steps {
+                            runMATLABCommand 'ver'
+                            runMATLABCommand 'pwd'
+                        }
+                    }
+                    stage('MATLAB Display') {
+                        steps {
+                            runMATLABCommand "disp('Hello World!')"
+                        }
+                    }
 
-    stage('Artifact Management') {
-      parallel {
-        stage('Archive Binaries') {
-          steps {
-            archiveArtifacts(caseSensitive: true, fingerprint: true, artifacts: '*.elf, *.hex', allowEmptyArchive: true)
-          }
+                }
+                
+            } 
         }
-
-        stage('Archive Build Source') {
-          steps {
-            archiveArtifacts '*_ert_rtw/**/*'
-          }
-        }
-
-      }
     }
-
-  }
-  environment {
-    GEN_CODE_ONLY = 'off'
-  }
 }
